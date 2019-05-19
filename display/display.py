@@ -37,12 +37,25 @@ class Display():
     # Add explicitly converter
     pd.plotting.register_matplotlib_converters()
     df = pd.DataFrame(self.data)
+    color_arr = []
+    for item in df['date']:
+      if item.hour >= 6 and item.hour < 12:
+        color_arr.append('y')
+      elif item.hour >= 12 and item.hour < 18:
+        color_arr.append('r')
+      elif item.hour >= 18 and item.hour < 24:
+        color_arr.append('g')
+      else: # 00 ~ 06 early in the morning
+        color_arr.append('k')
+    # Set color_arr to the third column of df for colouring
+    df['color'] = color_arr
     plt.figure(figsize=(400, 10))
-    plt.scatter(df['date'], df['pm25'])
+    plt.scatter(df['date'], df['pm25'], c=df['color'])
     plt.title('pm2.5 plot')
     plt.xlabel('Date', fontsize=10)
     plt.xticks(rotation=45)
     plt.ylabel('pm2.5 (μg/m^3)')
+    plt.legend()
     plt.show()
   def reset(self):
     self.pos = -1
