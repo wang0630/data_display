@@ -40,17 +40,20 @@ class Display():
     color_arr = []
     for item in df['date']:
       if item.hour >= 6 and item.hour < 12:
-        color_arr.append('y')
+        color_arr.append(1)
       elif item.hour >= 12 and item.hour < 18:
-        color_arr.append('r')
+        color_arr.append(2)
       elif item.hour >= 18 and item.hour < 24:
-        color_arr.append('g')
+        color_arr.append(3)
       else: # 00 ~ 06 early in the morning
-        color_arr.append('k')
+        color_arr.append(0)
     # Set color_arr to the third column of df for colouring
     df['color'] = color_arr
     plt.figure(figsize=(400, 10))
-    plt.scatter(df['date'], df['pm25'], c=df['color'])
+    labels = ['0~6', '6~12', '12~18', '18~24']
+    colors = ['navy', 'turquoise', 'darkorange', 'y']
+    for i, dff in df.groupby('color'):
+      plt.scatter(dff['date'], dff['pm25'], c=colors[i], label=labels[i])
     plt.title('pm2.5 plot')
     plt.xlabel('Date', fontsize=10)
     plt.xticks(rotation=45)
