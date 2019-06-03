@@ -88,4 +88,21 @@ class Display():
     label = 'position %d' % self.pos[self.index]
     plt.plot(df['date'], df['pm25'], c=colors[self.index], label=label, lw=1, ls='-', marker = '.', alpha=0.8)
     self.index = self.index + 1
+  def plt_same_pos(self):
+    # Add explicitly converter
+    pd.plotting.register_matplotlib_converters()
+    df = pd.DataFrame(self.data)
+    # Select the duration
+    df = df.loc[ df['date'] > self.start_time ]
+    df = df.loc[ df['date'] < self.end_time ]
+    # Plot y versus x(time)
+    colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen']
+    label = ['pm10', 'pm25', 'pm100', 'temp', 'humidity']
+    plt.plot(df['date'], df[label[0]], c=colors[0], label=label[0], lw=1, ls='-', marker = '.', alpha=0.8)
+    plt.plot(df['date'], df[label[1]], c=colors[1], label=label[1], lw=1, ls='-', marker = '.', alpha=0.8)
+    plt.plot(df['date'], df[label[2]], c=colors[2], label=label[2], lw=1, ls='-', marker = '.', alpha=0.8)
+    plt.plot(df['date'], df[label[3]], c=colors[3], label=label[3], lw=1, ls='-', marker = '.', alpha=0.8)
+    plt.plot(df['date'], df[label[4]], c=colors[4], label=label[4], lw=1, ls='-', marker = '.', alpha=0.8)
+    self.index = self.index + 1
+
   

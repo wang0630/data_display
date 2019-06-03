@@ -2,7 +2,11 @@ from display.display import Display
 
 my_display = None
 while(1):
-  print('mode 0: colors depend on time, mode 1: colors depend on positions')
+  print('--------------------------------------')
+  print('| mode 0: colors depend on time      |')
+  print('| mode 1: colors depend on positions |')
+  print('| mode 2: temp & humidity            |')
+  print('--------------------------------------')
   mode = input('Enter a mode(0~1) or -1 to exit this program: ')
   mode = int(mode)
   
@@ -55,6 +59,24 @@ while(1):
           my_display.plt_multiple_pos()
         my_display.create_graph()
         break
+    
+  elif mode == 2:
+    time = []
+    start_time = input('Enter the start time, according to the format\nYYYY MM DD\n')
+    time.append(start_time)
+    end_time = input('Enter the end time, according to the format\nYYYY MM DD\n')
+    time.append(end_time)
+    pos = input('Enter a position(0~8) or -1 to exit this program: ')
+    # Enter a number?
+    pos = int(pos)
+    if pos >= 0 and pos <= 8:
+      pos_list = [pos]
+      if my_display:
+        my_display.reset()
+      my_display = Display(pos_list, time)
+      my_display.get_data()
+      my_display.plt_same_pos()
+      my_display.create_graph()
 
   elif mode == -1:
     if my_display:
