@@ -20,7 +20,7 @@ class Display():
     for index, value in enumerate(self.data):
       # strptime() parse str of date according to the format given behind
       # It is still naive datetime object, meaning that it is unaware of timezone
-      unaware = dt.datetime.strptime(value.get('date'),  '%a, %d %B %Y %H:%M:%S %Z')
+      unaware = dt.datetime.strptime(value.get('date'),  '%a, %d %b %Y %H:%M:%S %Z')
       # Create a utc timezone
       utc_timezone = pytz.timezone('UTC')
       # make utc_unaware obj aware of timezone
@@ -98,11 +98,12 @@ class Display():
     # Plot y versus x(time)
     colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen']
     label = ['pm10', 'pm25', 'pm100', 'temp', 'humidity']
-    plt.plot(df['date'], df[label[0]], c=colors[0], label=label[0], lw=1, ls='-', marker = '.', alpha=0.8)
-    plt.plot(df['date'], df[label[1]], c=colors[1], label=label[1], lw=1, ls='-', marker = '.', alpha=0.8)
-    plt.plot(df['date'], df[label[2]], c=colors[2], label=label[2], lw=1, ls='-', marker = '.', alpha=0.8)
-    plt.plot(df['date'], df[label[3]], c=colors[3], label=label[3], lw=1, ls='-', marker = '.', alpha=0.8)
-    plt.plot(df['date'], df[label[4]], c=colors[4], label=label[4], lw=1, ls='-', marker = '.', alpha=0.8)
+    label_display = ['pm1.0', 'pm2.5', 'pm10.0', 'temperature', 'humidity']
+    plt.plot(df['date'], df[label[0]], c=colors[0], label=label_display[0], lw=1, ls='-', marker = '.', alpha=0.8)
+    plt.plot(df['date'], df[label[1]], c=colors[1], label=label_display[1], lw=1, ls='-', marker = '.', alpha=0.8)
+    plt.plot(df['date'], df[label[2]], c=colors[2], label=label_display[2], lw=1, ls='-', marker = '.', alpha=0.8)
+    plt.plot(df['date'], df[label[3]], c=colors[3], label=label_display[3], lw=1, ls='-', marker = '.', alpha=0.8)
+    plt.plot(df['date'], df[label[4]], c=colors[4], label=label_display[4], lw=1, ls='-', marker = '.', alpha=0.8)
     self.index = self.index + 1
 
   
