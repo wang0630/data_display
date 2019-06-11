@@ -106,4 +106,32 @@ class Display():
     plt.plot(df['date'], df[label[4]], c=colors[4], label=label_display[4], lw=1, ls='-', marker = '.', alpha=0.8)
     self.index = self.index + 1
 
-  
+  def plt_multiple_pos_10(self):
+    # Add explicitly converter
+    pd.plotting.register_matplotlib_converters()
+    df = pd.DataFrame(self.data)
+    # Select the duration
+    df = df.loc[ df['date'] > self.start_time ]
+    df = df.loc[ df['date'] < self.end_time ]
+
+    print(df)
+    # Plot y versus x(time)
+    colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen']
+    label = 'position %d' % self.pos[self.index]
+    plt.plot(df['date'], df['pm25'], c=colors[self.index], label=label, lw=1, ls='-', marker = '.', alpha=0.8)
+    self.index = self.index + 1
+
+  def combine_df(self):
+    df = pd.DataFrame(self.data)
+    df = df.tail(10)
+    df['pos'] = self.index
+    if self.index == 0:
+      self.df = df
+    else:
+      self.df = pd.concat([self.df, df])
+    self.index = self.index + 1
+    
+  def print_recent_data(self):
+    self.df.sort_values(by='date', inplace=True)
+    print(self.df.tail(60))
+    

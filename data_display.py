@@ -3,14 +3,29 @@ from display.display import Display
 my_display = None
 while(1):
   print('--------------------------------------')
-  print('| mode 0: colors depend on time      |')
-  print('| mode 1: colors depend on positions |')
-  print('| mode 2: temp & humidity            |')
+  print('| mode 0: see recent data            |')
+  print('| mode 1: colors depend on time      |')
+  print('| mode 2: colors depend on positions |')
+  print('| mode 3: temp & humidity            |')
   print('--------------------------------------')
   mode = input('Enter a mode(0~1) or -1 to exit this program: ')
   mode = int(mode)
   
   if mode == 0:
+    if my_display:
+      my_display.reset()
+    # All positions
+    pos_list = range(0, 8)
+    # Unused time
+    time = ['2020 02 02', '2020 02 03']
+    my_display = Display(pos_list, time)
+    
+    for i in pos_list:
+      my_display.get_data()
+      my_display.combine_df()
+    my_display.print_recent_data()
+
+  if mode == 1:
     time = []
     start_time = input('Enter the start time, according to the format\nYYYY MM DD\n')
     time.append(start_time)
@@ -37,7 +52,7 @@ while(1):
       print('Invalid input, try again!')
     my_display.create_graph()
 
-  elif mode == 1:
+  elif mode == 2:
     pos_list = []
     time = []
     start_time = input('Enter the start time, according to the format\nYYYY MM DD\n')
@@ -60,7 +75,7 @@ while(1):
         my_display.create_graph()
         break
     
-  elif mode == 2:
+  elif mode == 3:
     time = []
     start_time = input('Enter the start time, according to the format\nYYYY MM DD\n')
     time.append(start_time)
@@ -77,6 +92,29 @@ while(1):
       my_display.get_data()
       my_display.plt_same_pos()
       my_display.create_graph()
+
+  elif mode == 10:
+    pos_list = []
+    time = []
+    start_time = input('Enter the start time, according to the format\nYYYY MM DD\n')
+    time.append(start_time)
+    end_time = input('Enter the end time, according to the format\nYYYY MM DD\n')
+    time.append(end_time)
+    while True:
+      pos = input('Enter a position(0~8) one by one until you enter -1 to plot the graph: ')
+      pos = int(pos)
+      if pos >= 0 and pos <= 8:
+        pos_list.append(pos)
+      if pos == -1:
+        if my_display:
+          my_display.reset()
+        my_display = Display(pos_list, time)
+        my_display.plt_figure()
+        for i in range(len(pos_list)):
+          my_display.get_data()
+          my_display.plt_multiple_pos_10()
+        my_display.create_graph()
+        break
 
   elif mode == -1:
     if my_display:
