@@ -23,14 +23,12 @@ while(1):
   if mode == 0:
     if my_display:
       my_display.reset()
-    # All positions
-    pos_list = range(0, 8)
+    # Unused position
+    pos_list = []
     # Unused time
     time = ['2020 02 02', '2020 02 03']
     my_display = Display(pos_list, time)
-    for i in pos_list:
-      my_display.get_data()
-      my_display.combine_df()
+    my_display.get_all_data()
     my_display.print_recent_data()
     break
 
@@ -86,7 +84,7 @@ while(1):
         my_display.reset()
       my_display = Display(pos_list, time)
       my_display.get_data()
-      my_display.plt_same_pos()
+      my_display.plt_multiple_features()
       my_display.create_graph()
 
   elif mode == 4:

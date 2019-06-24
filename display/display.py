@@ -115,7 +115,7 @@ class Display():
     plt.plot(df['date'], df['pm25'], c=colors[self.index], label=label, lw=1, ls='-', marker = '.', alpha=0.8)
     self.index = self.index + 1
   
-  def plt_same_pos(self):
+  def plt_multiple_features(self):
     # Add explicitly converter
     pd.plotting.register_matplotlib_converters()
     df = pd.DataFrame(self.data)
@@ -161,12 +161,13 @@ class Display():
     self.index = self.index + 1
     
   def print_recent_data(self):
-    self.df.sort_values(by='date', inplace=True)
+    # convert data to dataframe
+    self.df = pd.DataFrame(self.data)
     # set the order of the columns
-    self.df = self.df[['date', 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'pos']]
-    # set that display at most 100 rows in the dataframe
-    pd.set_option('display.max_rows', 100)
-    print(self.df.tail(100))
+    self.df = self.df[['date', 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'position']]
+    # set that display at most 300 rows in the dataframe
+    pd.set_option('display.max_rows', 300)
+    print(self.df.tail(300))
 
   def plt_corr(self):
     # convert data to dataframe
@@ -176,8 +177,14 @@ class Display():
     self.df['day'] = self.df['date'].apply(lambda x: x.day)
     self.df['hour'] = self.df['date'].apply(lambda x: x.hour)
     self.df['minute'] = self.df['date'].apply(lambda x: x.minute)
+    # Add a column that equals to hour-shift_value
+    shift_value = 11
+    plus_value = 24 + shift_value
+    column_name = 'hour_minus%d' % shift_value
+    self.df[column_name] = self.df['hour'].apply(lambda x: x-shift_value)
+    self.df[column_name] = self.df[column_name].apply(lambda x: x+plus_value if x<0 else x)
     # set the order of the columns
-    self.df = self.df[['month', 'day', 'hour', 'minute', 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'position']]
+    self.df = self.df[['month', 'day', 'hour', column_name, 'minute', 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'position']]
     # compute the correlation
     corr = self.df.corr()
     # plot correlation matrix
