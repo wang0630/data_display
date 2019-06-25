@@ -200,4 +200,31 @@ class Display():
                 linewidths=0.5)
     plt.show()
 
+  def plt_boxplot(self):
+    # convert data to dataframe
+    df = pd.DataFrame(self.data)
+    # Select position 0~7
+    df = df.loc[ df['position'] <= 7 ]
+    # rename the names of columns
+    df = df.rename(columns = {'pm10': 'pm1.0', 'pm25': 'pm2.5', 'pm100': 'pm10.0'})
+    # construct a new dataframe used to plot boxplot 1
+    df_melt = pd.melt(df, id_vars=['position'], value_vars=['pm1.0', 'pm2.5', 'pm10.0'], var_name='Particulate Matter (PM)')
+    # plot three boxplots
+    fig1, axes = plt.subplots(3, 1, sharex=True, figsize=(20, 8))
+    # subplot 1
+    ax = sns.boxplot(x='position', y='value', data=df_melt, hue='Particulate Matter (PM)', palette='Set3', ax=axes[0])
+    ax.axis(ymin=0, ymax=100)
+    ax.set_xlabel('')
+    ax.set_ylabel('(μg/m^3)')
+    # subplot 2
+    ax = sns.boxplot(x='position', y='temp', data=df, color='orange', ax=axes[1])
+    ax.axis(ymin=20, ymax=40)
+    ax.set_xlabel('')
+    ax.set_ylabel('temp(°C)')
+    # subplot 3
+    ax = sns.boxplot(x='position', y='humidity', data=df, color='cyan', ax=axes[2])
+    ax.axis(ymin=15, ymax=100)
+    ax.set_ylabel('humidity(%)')
+    plt.show()
+
     

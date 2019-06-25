@@ -16,8 +16,9 @@ while(1):
   print('| mode 2: show multiple positions    |')
   print('| mode 3: show multiple features     |')
   print('| mode 4: show correlation           |')
+  print('| mode 5: show boxplot               |')
   print('--------------------------------------')
-  mode = input('Enter a mode(0~4) or -1 to exit this program: ')
+  mode = input('Enter a mode(0~5) or -1 to exit this program: ')
   mode = int(mode)
   
   if mode == 0:
@@ -97,6 +98,17 @@ while(1):
     my_display = Display(pos_list, time)
     my_display.get_all_data()
     my_display.plt_corr()
+
+  elif mode == 5:
+    if my_display:
+      my_display.reset()
+    # Unused postion
+    pos_list = []
+    # Unused time
+    time = ['2020 02 02', '2020 02 03']
+    my_display = Display(pos_list, time)
+    my_display.get_all_data()
+    my_display.plt_boxplot()
 
   elif mode == 10:
     pos_list = []
