@@ -2,9 +2,11 @@ import json
 import datetime as dt
 import pytz
 import requests
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy import stats
 
 class Display():
   def __init__(self, pos, time):
@@ -171,22 +173,21 @@ class Display():
 
   def plt_corr(self):
     # convert data to dataframe
-    self.df = pd.DataFrame(self.data)
-    # Add columns for month, day, hour, minute
-    self.df['month'] = self.df['date'].apply(lambda x: x.month)
-    self.df['day'] = self.df['date'].apply(lambda x: x.day)
-    self.df['hour'] = self.df['date'].apply(lambda x: x.hour)
-    self.df['minute'] = self.df['date'].apply(lambda x: x.minute)
-    # Add a column that equals to hour-shift_value
+    df = pd.DataFrame(self.data)
+    # Add columns for month, day, hour_minute
+    df['month'] = df['date'].apply(lambda x: x.month)
+    df['day'] = df['date'].apply(lambda x: x.day)
+    df['hour_minute'] = df['date'].apply(lambda x: x.hour+x.minute/60)
+    # Add a column that equals to hour_minute-shift_value
     shift_value = 11
     plus_value = 24 + shift_value
-    column_name = 'hour_minus%d' % shift_value
-    self.df[column_name] = self.df['hour'].apply(lambda x: x-shift_value)
-    self.df[column_name] = self.df[column_name].apply(lambda x: x+plus_value if x<0 else x)
+    column_name = 'hour_minute_minus%d' % shift_value
+    df[column_name] = df['hour_minute'].apply(lambda x: x-shift_value)
+    df[column_name] = df[column_name].apply(lambda x: x+plus_value if x<0 else x)
     # set the order of the columns
-    self.df = self.df[['month', 'day', 'hour', column_name, 'minute', 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'position']]
+    df = df[['month', 'day', 'hour_minute', column_name, 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'position']]
     # compute the correlation
-    corr = self.df.corr()
+    corr = df.corr()
     # plot correlation matrix
     fig, ax = plt.subplots(figsize=(7, 7))
     sns.heatmap(corr, 
@@ -227,4 +228,43 @@ class Display():
     ax.set_ylabel('humidity(%)')
     plt.show()
 
-    
+  def plt_scatter(self):
+    # convert data to dataframe
+    df = pd.DataFrame(self.data)
+    # Select position 0~7
+    df = df.loc[ df['position'] <= 7 ]
+    # Select the duration
+    df = df.loc[ df['date'] > self.start_time ]
+    # rename the names of columns
+    df = df.rename(columns = {'pm10': 'pm1.0', 'pm25': 'pm2.5', 'pm100': 'pm10.0'})
+    # Add a column for hour_minute
+    df['hour_minute'] = df['date'].apply(lambda x: x.hour+x.minute/60)
+    # set the order of the columns & discard some columns
+    df = df[['hour_minute', 'pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity', 'position']]
+    # exclude outliers
+    df = df[(np.abs(stats.zscore(df)) < 3).all(axis=1)]
+    # plot scatter plot
+    # subplot 1
+    ax = plt.subplot(221)
+    x = np.array(df['temp'])
+    y = np.array(df['pm2.5'])
+    colors = np.array(df['position'])
+    scatter = ax.scatter(x, y, c=colors, cmap='Spectral')
+    ax.legend(*scatter.legend_elements(num=8), loc='upper right', title='position')
+    plt.xlabel('temp (°C)')
+    plt.ylabel('pm2.5 (μg/m^3)')
+    # subplot 2
+    ax = plt.subplot(222)
+    x = np.array(df['humidity'])
+    scatter = ax.scatter(x, y, c=colors, cmap='Spectral')
+    ax.legend(*scatter.legend_elements(num=8), loc='upper left', title='position')
+    plt.xlabel('humidity (%)')
+    plt.ylabel('pm2.5 (μg/m^3)')
+    # sunplot 3
+    ax = plt.subplot(223)
+    x = np.array(df['hour_minute'])
+    scatter = ax.scatter(x, y, c=colors, cmap='Spectral')
+    ax.legend(*scatter.legend_elements(num=8), loc='upper left', title='position')
+    plt.xlabel('hour (hr.)')
+    plt.ylabel('pm2.5 (μg/m^3)')
+    plt.show()
