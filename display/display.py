@@ -114,7 +114,7 @@ class Display():
     # Plot y versus x(time)
     colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen', 'black']
     label = 'position %d' % self.pos[self.index]
-    plt.plot(df['date'], df['pm25'], c=colors[self.index], label=label, lw=1, ls='-', marker = '.', alpha=0.8)
+    plt.plot(df['date'], df['pm25'], c=colors[self.index], label=label, lw=1, ls='-') # marker = '.' , alpha=0.8
     self.index = self.index + 1
   
   def plt_multiple_features(self):
@@ -128,26 +128,11 @@ class Display():
     colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen']
     label = ['pm10', 'pm25', 'pm100', 'temp', 'humidity']
     label_display = ['pm1.0', 'pm2.5', 'pm10.0', 'temperature', 'humidity']
-    plt.plot(df['date'], df[label[0]], c=colors[0], label=label_display[0], lw=1, ls='-', marker = '.', alpha=0.8)
-    plt.plot(df['date'], df[label[1]], c=colors[1], label=label_display[1], lw=1, ls='-', marker = '.', alpha=0.8)
-    plt.plot(df['date'], df[label[2]], c=colors[2], label=label_display[2], lw=1, ls='-', marker = '.', alpha=0.8)
-    plt.plot(df['date'], df[label[3]], c=colors[3], label=label_display[3], lw=1, ls='-', marker = '.', alpha=0.8)
-    plt.plot(df['date'], df[label[4]], c=colors[4], label=label_display[4], lw=1, ls='-', marker = '.', alpha=0.8)
-    self.index = self.index + 1
-
-  def plt_multiple_pos_10(self):
-    # Add explicitly converter
-    pd.plotting.register_matplotlib_converters()
-    df = pd.DataFrame(self.data)
-    # Select the duration
-    df = df.loc[ df['date'] > self.start_time ]
-    df = df.loc[ df['date'] < self.end_time ]
-
-    print(df)
-    # Plot y versus x(time)
-    colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen']
-    label = 'position %d' % self.pos[self.index]
-    plt.plot(df['date'], df['pm25'], c=colors[self.index], label=label, lw=1, ls='-', marker = '.', alpha=0.8)
+    plt.plot(df['date'], df[label[0]], c=colors[0], label=label_display[0], lw=1, ls='-')
+    plt.plot(df['date'], df[label[1]], c=colors[1], label=label_display[1], lw=1, ls='-')
+    plt.plot(df['date'], df[label[2]], c=colors[2], label=label_display[2], lw=1, ls='-')
+    plt.plot(df['date'], df[label[3]], c=colors[3], label=label_display[3], lw=1, ls='-')
+    plt.plot(df['date'], df[label[4]], c=colors[4], label=label_display[4], lw=1, ls='-')
     self.index = self.index + 1
 
   def combine_df(self):
@@ -174,9 +159,10 @@ class Display():
   def plt_corr(self):
     # convert data to dataframe
     df = pd.DataFrame(self.data)
-    # Add columns for month, day, hour_minute
+    # Add columns for month, day, weekday, hour_minute
     df['month'] = df['date'].apply(lambda x: x.month)
     df['day'] = df['date'].apply(lambda x: x.day)
+    df['weekday'] = df['date'].apply(lambda x: x.weekday)
     df['hour_minute'] = df['date'].apply(lambda x: x.hour+x.minute/60)
     # Add a column that equals to hour_minute-shift_value
     shift_value = 11
@@ -185,7 +171,7 @@ class Display():
     df[column_name] = df['hour_minute'].apply(lambda x: x-shift_value)
     df[column_name] = df[column_name].apply(lambda x: x+plus_value if x<0 else x)
     # set the order of the columns
-    df = df[['month', 'day', 'hour_minute', column_name, 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'position']]
+    df = df[['month', 'day', 'weekday', 'hour_minute', column_name, 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'position']]
     # compute the correlation
     corr = df.corr()
     # plot correlation matrix
