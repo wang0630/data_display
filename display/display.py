@@ -15,7 +15,13 @@ class Display():
     self.start_time = dt.datetime.strptime(time[0], '%Y %m %d').replace(tzinfo=taipei_tz)
     self.end_time = dt.datetime.strptime(time[1], '%Y %m %d').replace(tzinfo=taipei_tz)
     self.index = 0
-  def get_data(self):
+
+  def reset(self):
+    self.pos = -1
+    self.data = []
+    plt.close()
+  
+  def get_data_by_pos(self):
     r = requests.get(f'http://140.116.82.93:6800/campus/display/{ self.pos[self.index] }')
     # date field in self.data is the str of datetime
     # We need to convert it to timezone aware object first
@@ -40,6 +46,7 @@ class Display():
       taiwan_aware = utc_aware.astimezone(pytz.timezone('Asia/Taipei'))
       # print(f"{ index }: {unaware} {utc_aware} {taiwan_aware}")
       value['date'] = taiwan_aware
+  
   def get_all_data(self):
     r = requests.get(f'http://140.116.82.93:6800/training')
     # date field in self.data is the str of datetime
@@ -65,6 +72,7 @@ class Display():
       taiwan_aware = utc_aware.astimezone(pytz.timezone('Asia/Taipei'))
       # print(f"{ index }: {unaware} {utc_aware} {taiwan_aware}")
       value['date'] = taiwan_aware
+  
   def plt_scatter_time(self):
     # Add explicitly converter
     pd.plotting.register_matplotlib_converters()
@@ -82,58 +90,71 @@ class Display():
     # Set color_arr to the third column of df for colouring
     df['color'] = color_arr
     # Select the duration
-    df = df.loc[ df['date'] > self.start_time ]
-    df = df.loc[ df['date'] < self.end_time ]
-    plt.figure(figsize=(20, 20))
+    df = df.loc[ df['date'] >= self.start_time ]
+    df = df.loc[ df['date'] <= self.end_time ]
+    # plot scatter plot of which colors varying with time
+    plt.style.use('ggplot')
+    fig, ax = plt.subplots(figsize=(12, 7))
     labels = ['0~6', '6~12', '12~18', '18~24']
     colors = ['navy', 'turquoise', 'darkorange', 'y']
     for i, dff in df.groupby('color'):
-      plt.scatter(dff['date'], dff['pm25'], c=colors[i], label=labels[i])
-  def create_graph(self):
-    plt.title('pm2.5 plot')
-    plt.xlabel('Date', fontsize=10)
+      ax.scatter(dff['date'], dff['pm25'], c=colors[i], label=labels[i])
+    ax.set_xlim([self.start_time, self.end_time])
+    plt.title('Position %d pm2.5 vs. time scatter plot' % self.pos[0])
+    plt.xlabel('time', fontsize=10)
     plt.xticks(rotation=45)
     plt.ylabel('pm2.5 (μg/m^3)')
-    plt.legend()
+    plt.legend(title='hour')
     plt.show()
-  def reset(self):
-    self.pos = -1
-    self.data = []
-    plt.close()
 
   def plt_figure(self):
-    plt.figure(figsize=(20, 20))
+    plt.figure(figsize=(12, 7))
+    plt.style.use('ggplot')
 
   def plt_multiple_pos(self):
     # Add explicitly converter
     pd.plotting.register_matplotlib_converters()
+    # convert data to dataframe
     df = pd.DataFrame(self.data)
     # Select the duration
-    df = df.loc[ df['date'] > self.start_time ]
-    df = df.loc[ df['date'] < self.end_time ]
+    df = df.loc[ df['date'] >= self.start_time ]
+    df = df.loc[ df['date'] <= self.end_time ]
     # Plot y versus x(time)
     colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen', 'black']
-    label = 'position %d' % self.pos[self.index]
-    plt.plot(df['date'], df['pm25'], c=colors[self.index], label=label, lw=1, ls='-') # marker = '.' , alpha=0.8
+    plt.plot(df['date'], df['pm25'], label=self.pos[self.index], lw=1.5, ls='-') # marker = '.' , alpha=0.8
     self.index = self.index + 1
+
+  def create_graph(self):
+    plt.title('pm2.5 plot')
+    plt.xlabel('Time', fontsize=10)
+    plt.xticks(rotation=45)
+    plt.ylabel('pm2.5 (μg/m^3)')
+    plt.legend(loc='upper left', bbox_to_anchor=(1,1), title='position')
+    plt.show()
   
   def plt_multiple_features(self):
     # Add explicitly converter
     pd.plotting.register_matplotlib_converters()
+    # convert data to dataframe
     df = pd.DataFrame(self.data)
     # Select the duration
-    df = df.loc[ df['date'] > self.start_time ]
-    df = df.loc[ df['date'] < self.end_time ]
+    df = df.loc[ df['date'] >= self.start_time ]
+    df = df.loc[ df['date'] <= self.end_time ]
     # Plot y versus x(time)
     colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen']
     label = ['pm10', 'pm25', 'pm100', 'temp', 'humidity']
     label_display = ['pm1.0', 'pm2.5', 'pm10.0', 'temperature', 'humidity']
-    plt.plot(df['date'], df[label[0]], c=colors[0], label=label_display[0], lw=1, ls='-')
-    plt.plot(df['date'], df[label[1]], c=colors[1], label=label_display[1], lw=1, ls='-')
-    plt.plot(df['date'], df[label[2]], c=colors[2], label=label_display[2], lw=1, ls='-')
-    plt.plot(df['date'], df[label[3]], c=colors[3], label=label_display[3], lw=1, ls='-')
-    plt.plot(df['date'], df[label[4]], c=colors[4], label=label_display[4], lw=1, ls='-')
-    self.index = self.index + 1
+    plt.plot(df['date'], df[label[0]], label=label_display[0], lw=1, ls='-')
+    plt.plot(df['date'], df[label[1]], label=label_display[1], lw=1, ls='-')
+    plt.plot(df['date'], df[label[2]], label=label_display[2], lw=1, ls='-')
+    plt.plot(df['date'], df[label[3]], label=label_display[3], lw=1, ls='-')
+    plt.plot(df['date'], df[label[4]], label=label_display[4], lw=1, ls='-')
+    plt.title('Position %d plot' % self.pos[self.index])
+    plt.xlabel('Time', fontsize=10)
+    plt.xticks(rotation=45)
+    plt.ylabel('value')
+    plt.legend(loc='upper left', bbox_to_anchor=(1,1))
+    plt.show()
 
   def combine_df(self):
     df = pd.DataFrame(self.data)
@@ -203,6 +224,7 @@ class Display():
     ax.axis(ymin=0, ymax=100)
     ax.set_xlabel('')
     ax.set_ylabel('(μg/m^3)')
+    ax.legend(loc='upper left', bbox_to_anchor=(1,1))
     # subplot 2
     ax = sns.boxplot(x='position', y='temp', data=df, color='orange', ax=axes[1])
     ax.axis(ymin=20, ymax=40)
@@ -229,28 +251,26 @@ class Display():
     df = df[['hour_minute', 'pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity', 'position']]
     # exclude outliers
     df = df[(np.abs(stats.zscore(df)) < 3).all(axis=1)]
+    # choose x, y
+    feature_dict = {0: 'hour_minute', 1: 'pm1.0', 2: 'pm2.5', 3: 'pm10.0', 4: 'temp', 5: 'humidity', 6: 'position'}
+    unit_dict = {0: '(hr)', 1: '(μg/m^3)', 2: '(μg/m^3)', 3: '(μg/m^3)', 4: '(°C)', 5: '(%)', 6: '(position)'}
+    print(feature_dict)
+    x_index = int(input('To choose x, input an integer: '))
+    y_index = int(input('To choose y, input an integer: '))
+    x_name = feature_dict[x_index]
+    y_name = feature_dict[y_index]
+    x_unit = unit_dict[x_index]
+    y_unit = unit_dict[y_index]
+    x = np.array(df[x_name])
+    y = np.array(df[y_name])
     # plot scatter plot
-    # subplot 1
-    ax = plt.subplot(221)
-    x = np.array(df['temp'])
-    y = np.array(df['pm2.5'])
+    plt.figure(figsize=(12, 7))
+    plt.style.use('ggplot')
     colors = np.array(df['position'])
-    scatter = ax.scatter(x, y, c=colors, cmap='Spectral')
-    ax.legend(*scatter.legend_elements(num=8), loc='upper right', title='position')
-    plt.xlabel('temp (°C)')
-    plt.ylabel('pm2.5 (μg/m^3)')
-    # subplot 2
-    ax = plt.subplot(222)
-    x = np.array(df['humidity'])
-    scatter = ax.scatter(x, y, c=colors, cmap='Spectral')
-    ax.legend(*scatter.legend_elements(num=8), loc='upper left', title='position')
-    plt.xlabel('humidity (%)')
-    plt.ylabel('pm2.5 (μg/m^3)')
-    # sunplot 3
-    ax = plt.subplot(223)
-    x = np.array(df['hour_minute'])
-    scatter = ax.scatter(x, y, c=colors, cmap='Spectral')
-    ax.legend(*scatter.legend_elements(num=8), loc='upper left', title='position')
-    plt.xlabel('hour (hr.)')
-    plt.ylabel('pm2.5 (μg/m^3)')
+    scatter = plt.scatter(x, y, c=colors, cmap='Spectral')
+    plt.legend(*scatter.legend_elements(num=8), loc='upper left', bbox_to_anchor=(1,1), title='position')
+    plt.xlabel('%s %s' % (x_name, x_unit))
+    plt.ylabel('%s %s' % (y_name, y_unit))
+    plt.title('Scatter plot (from %s/%s/%s until now) (after excluding outliers)' 
+              % (self.start_time.year, self.start_time.month, self.start_time.day))
     plt.show()

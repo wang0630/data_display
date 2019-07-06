@@ -74,9 +74,8 @@ while(1):
     # create a Display object
     my_display = Display(pos_list, time)
     # plt
-    my_display.get_data()
+    my_display.get_data_by_pos()
     my_display.plt_scatter_time()
-    my_display.create_graph()
 
   elif mode == 2:
     if my_display:
@@ -89,7 +88,7 @@ while(1):
     # plt
     my_display.plt_figure()
     for i in range(len(pos_list)):
-      my_display.get_data()
+      my_display.get_data_by_pos()
       my_display.plt_multiple_pos()
     my_display.create_graph()
     
@@ -102,9 +101,9 @@ while(1):
     # create a Display object
     my_display = Display(pos_list, time)
     # plt
-    my_display.get_data()
+    my_display.get_data_by_pos()
+    my_display.plt_figure()
     my_display.plt_multiple_features()
-    my_display.create_graph()
 
   elif mode == 4:
     if my_display:
@@ -138,7 +137,7 @@ while(1):
     # Unused postion
     pos_list = []
     # Unused time
-    time = ['2019 06 13', '2020 02 03']
+    time = ['2019 06 30', '2020 02 03']
     # create a Display object
     my_display = Display(pos_list, time)
     # plt
