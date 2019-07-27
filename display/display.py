@@ -119,13 +119,27 @@ class Display():
     # Select the duration
     df = df.loc[ df['date'] >= self.start_time ]
     df = df.loc[ df['date'] <= self.end_time ]
+    # exclude outliers
+    if self.exclude_outliers:
+      want_cols = ['humidity', 'pm10', 'pm100', 'pm25', 'temp']
+      df = df[(np.abs(stats.zscore(df.loc[:, want_cols])) < 3).all(axis=1)]
     # Plot y versus x(time)
     colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen', 'black']
-    plt.plot(df['date'], df['pm25'], label=self.pos[self.index], lw=1.5, ls='-') # marker = '.' , alpha=0.8
+    plt.plot(df['date'], df['pm25'], label=self.pos[self.index], lw=1, ls='-') # marker = '.' , alpha=0.8
     self.index = self.index + 1
 
+  def set_exclude_outliers(self):
+    ans = input('Do you want to excluding outliers ? (y/n) ')
+    if ans == 'y':
+      self.exclude_outliers = True
+    else:
+      self.exclude_outliers = False
+
   def create_graph(self):
-    plt.title('pm2.5 plot')
+    if self.exclude_outliers:
+      plt.title('pm2.5 plot (after excluding outliers)')
+    else:
+      plt.title('pm2.5 plot')
     plt.xlabel('Time', fontsize=10)
     plt.xticks(rotation=45)
     plt.ylabel('pm2.5 (μg/m^3)')
@@ -144,17 +158,24 @@ class Display():
     colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen']
     label = ['pm10', 'pm25', 'pm100', 'temp', 'humidity']
     label_display = ['pm1.0', 'pm2.5', 'pm10.0', 'temperature', 'humidity']
-    plt.plot(df['date'], df[label[0]], label=label_display[0], lw=1, ls='-')
-    plt.plot(df['date'], df[label[1]], label=label_display[1], lw=1, ls='-')
-    plt.plot(df['date'], df[label[2]], label=label_display[2], lw=1, ls='-')
-    plt.plot(df['date'], df[label[3]], label=label_display[3], lw=1, ls='-')
-    plt.plot(df['date'], df[label[4]], label=label_display[4], lw=1, ls='-')
-    plt.title('Position %d plot' % self.pos[self.index])
-    plt.xlabel('Time', fontsize=10)
+    # plot three subplots
+    fig, axes = plt.subplots(3, 1, sharex=True, figsize=(20, 8))
+    # subplot 1
+    axes[0].plot(df['date'], df[label[0]], label=label_display[0], lw=1, ls='-')
+    axes[0].plot(df['date'], df[label[1]], label=label_display[1], lw=1, ls='-')
+    axes[0].plot(df['date'], df[label[2]], label=label_display[2], lw=1, ls='-')
+    axes[0].set_title('Position %d plot' % self.pos[self.index])
+    axes[0].set_ylabel('(μg/m^3)')
+    axes[0].legend(loc='upper left', bbox_to_anchor=(1,1))
+    # subplot 2
+    axes[1].plot(df['date'], df[label[3]], label=label_display[3], lw=1, ls='-')
+    axes[1].set_ylabel('temperature (°C)')
+    # subplot 3
+    axes[2].plot(df['date'], df[label[4]], label=label_display[4], lw=1, ls='-')
+    axes[2].set_xlabel('Time', fontsize=10)
     plt.xticks(rotation=45)
-    plt.ylabel('value')
-    plt.legend(loc='upper left', bbox_to_anchor=(1,1))
-    plt.show()
+    axes[2].set_ylabel('humidity (%)')
+    fig.show()
 
   def combine_df(self):
     df = pd.DataFrame(self.data)
@@ -180,6 +201,11 @@ class Display():
   def plt_corr(self):
     # convert data to dataframe
     df = pd.DataFrame(self.data)
+    # Select position 0~7
+    df = df.loc[ df['position'] <= 7 ]
+    # Select the duration
+    df = df.loc[ df['date'] >= self.start_time ]
+    df = df.loc[ df['date'] <= self.end_time ]
     # Add columns for month, day, weekday, hour_minute
     df['month'] = df['date'].apply(lambda x: x.month)
     df['day'] = df['date'].apply(lambda x: x.day)
@@ -206,6 +232,9 @@ class Display():
                 ax=ax,
                 cmap='YlGnBu',
                 linewidths=0.5)
+    plt.title('Correlation between each feature (from %s/%s/%s to %s/%s/%s)' 
+              % (self.start_time.year, self.start_time.month, self.start_time.day,
+                 self.end_time.year, self.end_time.month, self.end_time.day))
     plt.show()
 
   def plt_boxplot(self):
@@ -213,6 +242,9 @@ class Display():
     df = pd.DataFrame(self.data)
     # Select position 0~7
     df = df.loc[ df['position'] <= 7 ]
+    # Select the duration
+    df = df.loc[ df['date'] >= self.start_time ]
+    df = df.loc[ df['date'] <= self.end_time ]
     # rename the names of columns
     df = df.rename(columns = {'pm10': 'pm1.0', 'pm25': 'pm2.5', 'pm100': 'pm10.0'})
     # construct a new dataframe used to plot boxplot 1
@@ -221,7 +253,7 @@ class Display():
     fig1, axes = plt.subplots(3, 1, sharex=True, figsize=(20, 8))
     # subplot 1
     ax = sns.boxplot(x='position', y='value', data=df_melt, hue='Particulate Matter (PM)', palette='Set3', ax=axes[0])
-    ax.axis(ymin=0, ymax=100)
+    ax.axis(ymin=0, ymax=50)
     ax.set_xlabel('')
     ax.set_ylabel('(μg/m^3)')
     ax.legend(loc='upper left', bbox_to_anchor=(1,1))
@@ -242,18 +274,20 @@ class Display():
     # Select position 0~7
     df = df.loc[ df['position'] <= 7 ]
     # Select the duration
-    df = df.loc[ df['date'] > self.start_time ]
+    df = df.loc[ df['date'] >= self.start_time ]
+    df = df.loc[ df['date'] <= self.end_time ]
     # rename the names of columns
     df = df.rename(columns = {'pm10': 'pm1.0', 'pm25': 'pm2.5', 'pm100': 'pm10.0'})
-    # Add a column for hour_minute
+    # Add columns for hour_minute, weekday
     df['hour_minute'] = df['date'].apply(lambda x: x.hour+x.minute/60)
+    df['weekday'] = df['date'].apply(lambda x: x.weekday)
     # set the order of the columns & discard some columns
-    df = df[['hour_minute', 'pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity', 'position']]
+    df = df[['hour_minute', 'pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity', 'position', 'weekday']]
     # exclude outliers
     df = df[(np.abs(stats.zscore(df)) < 3).all(axis=1)]
     # choose x, y
-    feature_dict = {0: 'hour_minute', 1: 'pm1.0', 2: 'pm2.5', 3: 'pm10.0', 4: 'temp', 5: 'humidity', 6: 'position'}
-    unit_dict = {0: '(hr)', 1: '(μg/m^3)', 2: '(μg/m^3)', 3: '(μg/m^3)', 4: '(°C)', 5: '(%)', 6: '(position)'}
+    feature_dict = {0: 'hour_minute', 1: 'pm1.0', 2: 'pm2.5', 3: 'pm10.0', 4: 'temp', 5: 'humidity', 6: 'position', 7: 'weekday'}
+    unit_dict = {0: '(hr)', 1: '(μg/m^3)', 2: '(μg/m^3)', 3: '(μg/m^3)', 4: '(°C)', 5: '(%)', 6: '(position)', 7: ''}
     print(feature_dict)
     x_index = int(input('To choose x, input an integer: '))
     y_index = int(input('To choose y, input an integer: '))
@@ -271,6 +305,7 @@ class Display():
     plt.legend(*scatter.legend_elements(num=8), loc='upper left', bbox_to_anchor=(1,1), title='position')
     plt.xlabel('%s %s' % (x_name, x_unit))
     plt.ylabel('%s %s' % (y_name, y_unit))
-    plt.title('Scatter plot (from %s/%s/%s until now) (after excluding outliers)' 
-              % (self.start_time.year, self.start_time.month, self.start_time.day))
+    plt.title('Scatter plot (from %s/%s/%s to %s/%s/%s) (after excluding outliers)' 
+              % (self.start_time.year, self.start_time.month, self.start_time.day,
+                 self.end_time.year, self.end_time.month, self.end_time.day))
     plt.show()

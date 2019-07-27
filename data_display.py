@@ -85,6 +85,8 @@ while(1):
     pos_list = input_pos(multiple=True)
     # create a Display object
     my_display = Display(pos_list, time)
+    # ask if the user want to exclude outliers
+    my_display.set_exclude_outliers()
     # plt
     my_display.plt_figure()
     for i in range(len(pos_list)):
@@ -108,10 +110,10 @@ while(1):
   elif mode == 4:
     if my_display:
       my_display.reset()
+    # input time & a position
     # Unused postion
     pos_list = []
-    # Unused time
-    time = ['2020 02 02', '2020 02 03']
+    time = input_time()
     # create a Display object
     my_display = Display(pos_list, time)
     # plt
@@ -121,10 +123,10 @@ while(1):
   elif mode == 5:
     if my_display:
       my_display.reset()
+    # input time & a position
     # Unused postion
     pos_list = []
-    # Unused time
-    time = ['2020 02 02', '2020 02 03']
+    time = input_time()
     # create a Display object
     my_display = Display(pos_list, time)
     # plt
@@ -134,10 +136,10 @@ while(1):
   elif mode == 6:
     if my_display:
       my_display.reset()
+    # input time & a position
     # Unused postion
     pos_list = []
-    # Unused time
-    time = ['2019 06 30', '2020 02 03']
+    time = input_time()
     # create a Display object
     my_display = Display(pos_list, time)
     # plt
