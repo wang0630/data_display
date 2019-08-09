@@ -21,6 +21,7 @@ class Display():
     self.data = []
     plt.close()
   
+  # Common functions
   def get_data_by_pos(self):
     r = requests.get(f'http://140.116.82.93:6800/campus/display/{ self.pos[self.index] }')
     # date field in self.data is the str of datetime
@@ -72,7 +73,30 @@ class Display():
       taiwan_aware = utc_aware.astimezone(pytz.timezone('Asia/Taipei'))
       # print(f"{ index }: {unaware} {utc_aware} {taiwan_aware}")
       value['date'] = taiwan_aware
-  
+
+  # Mode 0  
+  def print_recent_data(self):
+    # convert data to dataframe
+    self.df = pd.DataFrame(self.data)
+    # set the order of the columns
+    self.df = self.df[['date', 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'position']]
+    # set that display at most 300 rows in the dataframe
+    pd.set_option('display.max_rows', 300)
+    print(self.df.tail(300))
+
+  def combine_df(self):
+    df = pd.DataFrame(self.data)
+    df = df.tail(15)
+    # add position column in the dataframe
+    df['pos'] = self.pos[self.index]
+    if self.index == 0:
+      self.df = df
+    else:
+      self.df = pd.concat([self.df, df])
+    # increment the index value
+    self.index = self.index + 1
+
+  # Mode 1
   def plt_scatter_time(self):
     # Add explicitly converter
     pd.plotting.register_matplotlib_converters()
@@ -100,13 +124,14 @@ class Display():
     for i, dff in df.groupby('color'):
       ax.scatter(dff['date'], dff['pm25'], c=colors[i], label=labels[i])
     ax.set_xlim([self.start_time, self.end_time])
-    plt.title('Position %d pm2.5 vs. time scatter plot' % self.pos[0])
+    plt.title('pm2.5 vs time at Position %d' % self.pos[0])
     plt.xlabel('time', fontsize=10)
     plt.xticks(rotation=45)
     plt.ylabel('pm2.5 (μg/m^3)')
     plt.legend(title='hour')
     plt.show()
 
+  # Mode 2
   def plt_figure(self):
     plt.figure(figsize=(12, 7))
     plt.style.use('ggplot')
@@ -121,8 +146,7 @@ class Display():
     df = df.loc[ df['date'] <= self.end_time ]
     # exclude outliers
     if self.exclude_outliers:
-      want_cols = ['humidity', 'pm10', 'pm100', 'pm25', 'temp']
-      df = df[(np.abs(stats.zscore(df.loc[:, want_cols])) < 3).all(axis=1)]
+      df = df.loc[ df['pm25'] < 120 ]
     # Plot y versus x(time)
     colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen', 'black']
     plt.plot(df['date'], df['pm25'], label=self.pos[self.index], lw=1, ls='-') # marker = '.' , alpha=0.8
@@ -146,6 +170,7 @@ class Display():
     plt.legend(loc='upper left', bbox_to_anchor=(1,1), title='position')
     plt.show()
   
+  # Mode 3
   def plt_multiple_features(self):
     # Add explicitly converter
     pd.plotting.register_matplotlib_converters()
@@ -164,7 +189,7 @@ class Display():
     axes[0].plot(df['date'], df[label[0]], label=label_display[0], lw=1, ls='-')
     axes[0].plot(df['date'], df[label[1]], label=label_display[1], lw=1, ls='-')
     axes[0].plot(df['date'], df[label[2]], label=label_display[2], lw=1, ls='-')
-    axes[0].set_title('Position %d plot' % self.pos[self.index])
+    axes[0].set_title('Position %d data' % self.pos[self.index])
     axes[0].set_ylabel('(μg/m^3)')
     axes[0].legend(loc='upper left', bbox_to_anchor=(1,1))
     # subplot 2
@@ -177,27 +202,7 @@ class Display():
     axes[2].set_ylabel('humidity (%)')
     fig.show()
 
-  def combine_df(self):
-    df = pd.DataFrame(self.data)
-    df = df.tail(15)
-    # add position column in the dataframe
-    df['pos'] = self.pos[self.index]
-    if self.index == 0:
-      self.df = df
-    else:
-      self.df = pd.concat([self.df, df])
-    # increment the index value
-    self.index = self.index + 1
-    
-  def print_recent_data(self):
-    # convert data to dataframe
-    self.df = pd.DataFrame(self.data)
-    # set the order of the columns
-    self.df = self.df[['date', 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'position']]
-    # set that display at most 300 rows in the dataframe
-    pd.set_option('display.max_rows', 300)
-    print(self.df.tail(300))
-
+  # Mode 4
   def plt_corr(self):
     # convert data to dataframe
     df = pd.DataFrame(self.data)
@@ -206,6 +211,8 @@ class Display():
     # Select the duration
     df = df.loc[ df['date'] >= self.start_time ]
     df = df.loc[ df['date'] <= self.end_time ]
+    # rename the names of columns
+    df = df.rename(columns = {'pm10': 'pm1.0', 'pm25': 'pm2.5', 'pm100': 'pm10.0'})
     # Add columns for month, day, weekday, hour_minute
     df['month'] = df['date'].apply(lambda x: x.month)
     df['day'] = df['date'].apply(lambda x: x.day)
@@ -218,7 +225,7 @@ class Display():
     df[column_name] = df['hour_minute'].apply(lambda x: x-shift_value)
     df[column_name] = df[column_name].apply(lambda x: x+plus_value if x<0 else x)
     # set the order of the columns
-    df = df[['month', 'day', 'weekday', 'hour_minute', column_name, 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'position']]
+    df = df[['month', 'day', 'weekday', 'hour_minute', column_name, 'pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity', 'position']]
     # compute the correlation
     corr = df.corr()
     # plot correlation matrix
@@ -226,17 +233,18 @@ class Display():
     sns.heatmap(corr, 
                 xticklabels=corr.columns.values,
                 yticklabels=corr.columns.values,
-                vmax=0.7,
+                vmax=0.9,
                 square=True,
                 annot=True,
                 ax=ax,
-                cmap='YlGnBu',
+                cmap='Spectral',
                 linewidths=0.5)
     plt.title('Correlation between each feature (from %s/%s/%s to %s/%s/%s)' 
               % (self.start_time.year, self.start_time.month, self.start_time.day,
                  self.end_time.year, self.end_time.month, self.end_time.day))
     plt.show()
 
+  # Mode 5
   def plt_boxplot(self):
     # convert data to dataframe
     df = pd.DataFrame(self.data)
@@ -250,24 +258,29 @@ class Display():
     # construct a new dataframe used to plot boxplot 1
     df_melt = pd.melt(df, id_vars=['position'], value_vars=['pm1.0', 'pm2.5', 'pm10.0'], var_name='Particulate Matter (PM)')
     # plot three boxplots
-    fig1, axes = plt.subplots(3, 1, sharex=True, figsize=(20, 8))
-    # subplot 1
+    fig, axes = plt.subplots(3, 1, sharex=True, figsize=(20, 8))
+    # Boxplot 1
     ax = sns.boxplot(x='position', y='value', data=df_melt, hue='Particulate Matter (PM)', palette='Set3', ax=axes[0])
     ax.axis(ymin=0, ymax=50)
     ax.set_xlabel('')
     ax.set_ylabel('(μg/m^3)')
     ax.legend(loc='upper left', bbox_to_anchor=(1,1))
-    # subplot 2
+    # Boxplot 2
     ax = sns.boxplot(x='position', y='temp', data=df, color='orange', ax=axes[1])
     ax.axis(ymin=20, ymax=40)
     ax.set_xlabel('')
     ax.set_ylabel('temp(°C)')
-    # subplot 3
+    # Boxplot 3
     ax = sns.boxplot(x='position', y='humidity', data=df, color='cyan', ax=axes[2])
     ax.axis(ymin=15, ymax=100)
     ax.set_ylabel('humidity(%)')
-    plt.show()
+    # Fig
+    fig.suptitle('Boxplot (from %s/%s/%s to %s/%s/%s)' 
+                 % (self.start_time.year, self.start_time.month, self.start_time.day,
+                    self.end_time.year, self.end_time.month, self.end_time.day))
+    fig.show()
 
+  # Mode 6
   def plt_scatter(self):
     # convert data to dataframe
     df = pd.DataFrame(self.data)
@@ -284,7 +297,10 @@ class Display():
     # set the order of the columns & discard some columns
     df = df[['hour_minute', 'pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity', 'position', 'weekday']]
     # exclude outliers
-    df = df[(np.abs(stats.zscore(df)) < 3).all(axis=1)]
+    #want_cols = ['hour_minute', 'pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity', 'weekday']
+    #df = df[(np.abs(stats.zscore(df.loc[:, want_cols])) < 3).all(axis=1)]
+    df = df.loc[ df['pm2.5'] < 120 ]
+    df = df.loc[ df['humidity'] <= 100 ]
     # choose x, y
     feature_dict = {0: 'hour_minute', 1: 'pm1.0', 2: 'pm2.5', 3: 'pm10.0', 4: 'temp', 5: 'humidity', 6: 'position', 7: 'weekday'}
     unit_dict = {0: '(hr)', 1: '(μg/m^3)', 2: '(μg/m^3)', 3: '(μg/m^3)', 4: '(°C)', 5: '(%)', 6: '(position)', 7: ''}
@@ -303,6 +319,49 @@ class Display():
     colors = np.array(df['position'])
     scatter = plt.scatter(x, y, c=colors, cmap='Spectral')
     plt.legend(*scatter.legend_elements(num=8), loc='upper left', bbox_to_anchor=(1,1), title='position')
+    plt.xlabel('%s %s' % (x_name, x_unit))
+    plt.ylabel('%s %s' % (y_name, y_unit))
+    plt.title('Scatter plot (from %s/%s/%s to %s/%s/%s) (after excluding outliers)' 
+              % (self.start_time.year, self.start_time.month, self.start_time.day,
+                 self.end_time.year, self.end_time.month, self.end_time.day))
+    plt.show()
+
+  # Mode 7
+  def plt_scatter_one_pos(self):
+    # convert data to dataframe
+    df = pd.DataFrame(self.data)
+    # Select the duration
+    df = df.loc[ df['date'] >= self.start_time ]
+    df = df.loc[ df['date'] <= self.end_time ]
+    # rename the names of columns
+    df = df.rename(columns = {'pm10': 'pm1.0', 'pm25': 'pm2.5', 'pm100': 'pm10.0'})
+    # Add columns for hour_minute, weekday
+    df['hour_minute'] = df['date'].apply(lambda x: x.hour+x.minute/60)
+    df['weekday'] = df['date'].apply(lambda x: x.weekday)
+    # set the order of the columns & discard some columns
+    df = df[['hour_minute', 'pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity', 'weekday']]
+    # exclude outliers
+    # df = df[(np.abs(stats.zscore(df)) < 3).all(axis=1)]
+    df = df.loc[df['pm2.5'] < 120]
+    df = df.loc[df['humidity'] <= 100]
+    # choose x, y
+    feature_dict = {0: 'hour_minute', 1: 'pm1.0', 2: 'pm2.5', 3: 'pm10.0', 4: 'temp', 5: 'humidity', 6: 'position', 7: 'weekday'}
+    unit_dict = {0: '(hr)', 1: '(μg/m^3)', 2: '(μg/m^3)', 3: '(μg/m^3)', 4: '(°C)', 5: '(%)', 6: '(position)', 7: ''}
+    print(feature_dict)
+    x_index = int(input('To choose x, input an integer: '))
+    y_index = int(input('To choose y, input an integer: '))
+    x_name = feature_dict[x_index]
+    y_name = feature_dict[y_index]
+    x_unit = unit_dict[x_index]
+    y_unit = unit_dict[y_index]
+    label = self.pos[0]
+    x = np.array(df[x_name])
+    y = np.array(df[y_name])
+    # plot scatter plot
+    plt.figure(figsize=(12, 7))
+    plt.style.use('ggplot')
+    scatter = plt.scatter(x, y, label=label)
+    plt.legend(loc='upper left', bbox_to_anchor=(1,1), title='position')
     plt.xlabel('%s %s' % (x_name, x_unit))
     plt.ylabel('%s %s' % (y_name, y_unit))
     plt.title('Scatter plot (from %s/%s/%s to %s/%s/%s) (after excluding outliers)' 

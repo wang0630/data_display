@@ -47,6 +47,7 @@ while(1):
   print('| mode 4: show correlation           |')
   print('| mode 5: show boxplot               |')
   print('| mode 6: show scatter               |')
+  print('| mode 7: show scatter (one pos)     |')
   print('--------------------------------------')
   mode = input('Enter a mode(0~6) or -1 to exit this program: ')
   mode = int(mode)
@@ -145,6 +146,18 @@ while(1):
     # plt
     my_display.get_all_data()
     my_display.plt_scatter()
+
+  elif mode == 7:
+    if my_display:
+      my_display.reset()
+    # input time & a position
+    time = input_time()
+    pos_list = input_pos(multiple=False)
+    # create a Display object
+    my_display = Display(pos_list, time)
+    # plt
+    my_display.get_data_by_pos()
+    my_display.plt_scatter_one_pos()
 
   elif mode == -1:
     if my_display:
