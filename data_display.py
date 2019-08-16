@@ -49,7 +49,7 @@ while(1):
   print('| mode 6: show scatter               |')
   print('| mode 7: show scatter (one pos)     |')
   print('--------------------------------------')
-  mode = input('Enter a mode(0~6) or -1 to exit this program: ')
+  mode = input('Enter a mode(0~7) or -1 to exit this program: ')
   mode = int(mode)
   
   if mode == 0:
@@ -86,8 +86,10 @@ while(1):
     pos_list = input_pos(multiple=True)
     # create a Display object
     my_display = Display(pos_list, time)
-    # ask if the user want to exclude outliers
-    my_display.set_exclude_outliers()
+    # Ask the user to choose y
+    my_display.choose_y()
+    # ask if the user want to do data cleaning
+    my_display.set_data_cleaning()
     # plt
     my_display.plt_figure()
     for i in range(len(pos_list)):
@@ -103,6 +105,8 @@ while(1):
     pos_list = input_pos(multiple=False)
     # create a Display object
     my_display = Display(pos_list, time)
+    # Ask if the user want to do data cleaning
+    my_display.set_data_cleaning()
     # plt
     my_display.get_data_by_pos()
     my_display.plt_figure()

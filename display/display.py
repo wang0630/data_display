@@ -74,15 +74,22 @@ class Display():
       # print(f"{ index }: {unaware} {utc_aware} {taiwan_aware}")
       value['date'] = taiwan_aware
 
+  def set_data_cleaning(self):
+    ans = input('Do you want to do data cleaning ? (y/n) ')
+    if ans == 'y':
+      self.data_cleaning = True
+    else:
+      self.data_cleaning = False
+
   # Mode 0  
   def print_recent_data(self):
-    # convert data to dataframe
-    self.df = pd.DataFrame(self.data)
+    # Convert data to dataframe
+    df = pd.DataFrame(self.data)
     # set the order of the columns
-    self.df = self.df[['date', 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'position']]
+    df = df[['date', 'pm10', 'pm25', 'pm100', 'temp', 'humidity', 'position']]
     # set that display at most 300 rows in the dataframe
     pd.set_option('display.max_rows', 300)
-    print(self.df.tail(300))
+    print(df.tail(300))
 
   def combine_df(self):
     df = pd.DataFrame(self.data)
@@ -100,6 +107,7 @@ class Display():
   def plt_scatter_time(self):
     # Add explicitly converter
     pd.plotting.register_matplotlib_converters()
+    # Convert data to dataframe
     df = pd.DataFrame(self.data)
     color_arr = []
     for item in df['date']:
@@ -137,69 +145,78 @@ class Display():
     plt.style.use('ggplot')
 
   def plt_multiple_pos(self):
-    # Add explicitly converter
-    pd.plotting.register_matplotlib_converters()
     # convert data to dataframe
     df = pd.DataFrame(self.data)
+    # Rename the names of columns
+    df = df.rename(columns = {'pm10': 'pm1.0', 'pm25': 'pm2.5', 'pm100': 'pm10.0'})
     # Select the duration
     df = df.loc[ df['date'] >= self.start_time ]
     df = df.loc[ df['date'] <= self.end_time ]
-    # exclude outliers
-    if self.exclude_outliers:
-      df = df.loc[ df['pm25'] < 120 ]
+    # Data cleaning
+    if self.data_cleaning:
+      df = df.loc[ df['pm2.5'] < 120 ]
+      df = df.loc[ df['humidity'] <= 100 ]
+    # Add explicitly converter
+    pd.plotting.register_matplotlib_converters()
     # Plot y versus x(time)
     colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen', 'black']
-    plt.plot(df['date'], df['pm25'], label=self.pos[self.index], lw=1, ls='-') # marker = '.' , alpha=0.8
+    plt.plot(df['date'], df[self.y_name], label=self.pos[self.index], lw=1, ls='-') # marker = '.' , alpha=0.8
     self.index = self.index + 1
 
-  def set_exclude_outliers(self):
-    ans = input('Do you want to excluding outliers ? (y/n) ')
-    if ans == 'y':
-      self.exclude_outliers = True
-    else:
-      self.exclude_outliers = False
-
   def create_graph(self):
-    if self.exclude_outliers:
-      plt.title('pm2.5 plot (after excluding outliers)')
+    if self.data_cleaning:
+      plt.title('%s plot (after data cleaning)' % self.y_name)
     else:
-      plt.title('pm2.5 plot')
+      plt.title('%s plot' % self.y_name)
     plt.xlabel('Time', fontsize=10)
     plt.xticks(rotation=45)
-    plt.ylabel('pm2.5 (μg/m^3)')
+    plt.ylabel('%s %s' % (self.y_name, self.y_unit))
     plt.legend(loc='upper left', bbox_to_anchor=(1,1), title='position')
     plt.show()
+
+  def choose_y(self):
+    feature_dict = {0: 'pm1.0', 1: 'pm2.5', 2: 'pm10.0', 3: 'temp', 4: 'humidity'}
+    unit_dict = {0: '(μg/m^3)', 1: '(μg/m^3)', 2: '(μg/m^3)', 3: '(°C)', 4: '(%)'}
+    print(feature_dict)
+    y_index = int(input('To choose y, input an integer(0~4): '))
+    self.y_name = feature_dict[y_index]
+    self.y_unit = unit_dict[y_index]
   
   # Mode 3
   def plt_multiple_features(self):
-    # Add explicitly converter
-    pd.plotting.register_matplotlib_converters()
     # convert data to dataframe
     df = pd.DataFrame(self.data)
+    # Rename the names of columns
+    df = df.rename(columns = {'pm10': 'pm1.0', 'pm25': 'pm2.5', 'pm100': 'pm10.0'})
     # Select the duration
     df = df.loc[ df['date'] >= self.start_time ]
     df = df.loc[ df['date'] <= self.end_time ]
+    # Data cleaning
+    if self.data_cleaning:
+      df = df.loc[ df['pm2.5'] < 120 ]
+      df = df.loc[ df['humidity'] <= 100 ]
+    # Add explicitly converter
+    pd.plotting.register_matplotlib_converters()
     # Plot y versus x(time)
-    colors = ['navy', 'turquoise', 'darkorange', 'olive', 'lightgray', 'pink', 'lightgreen']
-    label = ['pm10', 'pm25', 'pm100', 'temp', 'humidity']
-    label_display = ['pm1.0', 'pm2.5', 'pm10.0', 'temperature', 'humidity']
+    label = ['pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity']
     # plot three subplots
     fig, axes = plt.subplots(3, 1, sharex=True, figsize=(20, 8))
     # subplot 1
-    axes[0].plot(df['date'], df[label[0]], label=label_display[0], lw=1, ls='-')
-    axes[0].plot(df['date'], df[label[1]], label=label_display[1], lw=1, ls='-')
-    axes[0].plot(df['date'], df[label[2]], label=label_display[2], lw=1, ls='-')
-    axes[0].set_title('Position %d data' % self.pos[self.index])
+    axes[0].plot(df['date'], df[label[0]], label=label[0], lw=1, ls='-')
+    axes[0].plot(df['date'], df[label[1]], label=label[1], lw=1, ls='-')
+    axes[0].plot(df['date'], df[label[2]], label=label[2], lw=1, ls='-')
     axes[0].set_ylabel('(μg/m^3)')
     axes[0].legend(loc='upper left', bbox_to_anchor=(1,1))
     # subplot 2
-    axes[1].plot(df['date'], df[label[3]], label=label_display[3], lw=1, ls='-')
+    axes[1].plot(df['date'], df[label[3]], label=label[3], lw=1, ls='-')
     axes[1].set_ylabel('temperature (°C)')
     # subplot 3
-    axes[2].plot(df['date'], df[label[4]], label=label_display[4], lw=1, ls='-')
+    axes[2].plot(df['date'], df[label[4]], label=label[4], lw=1, ls='-')
+    axes[2].set_ylabel('humidity (%)')
     axes[2].set_xlabel('Time', fontsize=10)
     plt.xticks(rotation=45)
-    axes[2].set_ylabel('humidity (%)')
+    # Fig
+    fig.suptitle('Position %d data display' % self.pos[self.index])
     fig.show()
 
   # Mode 4
@@ -213,6 +230,9 @@ class Display():
     df = df.loc[ df['date'] <= self.end_time ]
     # rename the names of columns
     df = df.rename(columns = {'pm10': 'pm1.0', 'pm25': 'pm2.5', 'pm100': 'pm10.0'})
+    # Data cleaning
+    df = df.loc[ df['pm2.5'] < 120 ]
+    df = df.loc[ df['humidity'] <= 100 ]
     # Add columns for month, day, weekday, hour_minute
     df['month'] = df['date'].apply(lambda x: x.month)
     df['day'] = df['date'].apply(lambda x: x.day)
@@ -239,7 +259,7 @@ class Display():
                 ax=ax,
                 cmap='Spectral',
                 linewidths=0.5)
-    plt.title('Correlation between each feature (from %s/%s/%s to %s/%s/%s)' 
+    plt.title('Correlation between each feature (from %s/%s/%s to %s/%s/%s) (after data cleaning)' 
               % (self.start_time.year, self.start_time.month, self.start_time.day,
                  self.end_time.year, self.end_time.month, self.end_time.day))
     plt.show()
@@ -296,9 +316,9 @@ class Display():
     df['weekday'] = df['date'].apply(lambda x: x.weekday)
     # set the order of the columns & discard some columns
     df = df[['hour_minute', 'pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity', 'position', 'weekday']]
-    # exclude outliers
-    #want_cols = ['hour_minute', 'pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity', 'weekday']
-    #df = df[(np.abs(stats.zscore(df.loc[:, want_cols])) < 3).all(axis=1)]
+    # Data cleaning
+    # want_cols = ['hour_minute', 'pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity', 'weekday']
+    # df = df[(np.abs(stats.zscore(df.loc[:, want_cols])) < 3).all(axis=1)]
     df = df.loc[ df['pm2.5'] < 120 ]
     df = df.loc[ df['humidity'] <= 100 ]
     # choose x, y
@@ -321,7 +341,7 @@ class Display():
     plt.legend(*scatter.legend_elements(num=8), loc='upper left', bbox_to_anchor=(1,1), title='position')
     plt.xlabel('%s %s' % (x_name, x_unit))
     plt.ylabel('%s %s' % (y_name, y_unit))
-    plt.title('Scatter plot (from %s/%s/%s to %s/%s/%s) (after excluding outliers)' 
+    plt.title('Scatter plot (from %s/%s/%s to %s/%s/%s) (after data cleaning)' 
               % (self.start_time.year, self.start_time.month, self.start_time.day,
                  self.end_time.year, self.end_time.month, self.end_time.day))
     plt.show()
@@ -340,8 +360,7 @@ class Display():
     df['weekday'] = df['date'].apply(lambda x: x.weekday)
     # set the order of the columns & discard some columns
     df = df[['hour_minute', 'pm1.0', 'pm2.5', 'pm10.0', 'temp', 'humidity', 'weekday']]
-    # exclude outliers
-    # df = df[(np.abs(stats.zscore(df)) < 3).all(axis=1)]
+    # Data cleaning
     df = df.loc[df['pm2.5'] < 120]
     df = df.loc[df['humidity'] <= 100]
     # choose x, y
@@ -364,7 +383,7 @@ class Display():
     plt.legend(loc='upper left', bbox_to_anchor=(1,1), title='position')
     plt.xlabel('%s %s' % (x_name, x_unit))
     plt.ylabel('%s %s' % (y_name, y_unit))
-    plt.title('Scatter plot (from %s/%s/%s to %s/%s/%s) (after excluding outliers)' 
+    plt.title('Scatter plot (from %s/%s/%s to %s/%s/%s) (after data cleaning)' 
               % (self.start_time.year, self.start_time.month, self.start_time.day,
                  self.end_time.year, self.end_time.month, self.end_time.day))
     plt.show()
